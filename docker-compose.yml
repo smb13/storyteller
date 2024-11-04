@@ -1,0 +1,34 @@
+---
+
+
+services:
+  stories:  # External API for production
+    build:
+      context: stories
+    restart: always
+    env_file:
+    -   .env
+    environment:
+      PORT: 8000
+      OTEL_SERVICE_NAME: story-getter
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    restart: always
+    image: postgres:16-alpine
+    volumes:
+#    -   ./db_dump:/etc/db_dump/
+    -   postgres_db:/var/lib/postgresql/data
+    env_file:
+    -   .env
+    healthcheck:
+      test: psql -U $POSTGRES_USER -d postgres -c "SELECT 1;"
+      start_period: 5s
+      interval: 2s
+      timeout: 1s
+      retries: 3
+
+volumes :
+  postgres_db:

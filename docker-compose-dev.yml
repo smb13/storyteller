@@ -1,0 +1,87 @@
+---
+
+
+x-base-settings : &base-settings
+  env_file: .env
+  restart: on-failure:3
+
+services        :
+  stories_dev:  # Story getter service for development
+    extends:
+      file: docker-compose-base.yml
+      service: stories
+    build:
+      context: stories
+      network: host
+      args:
+        REQUIREMENTS_DEV: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DEBUG: true
+    ports:
+    -   8888:8000
+    volumes:
+    -   ./stories/src:/src
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://127.0.0.1:5044
+        tag: apps
+
+  postgres:
+    extends:
+      file: docker-compose-base.yml
+      service: postgres
+    volumes:
+    -   ./db_dump:/etc/db_dump/
+    -   postgres_db:/var/lib/postgresql/data
+    ports:
+    -   5432:5432
+
+  logstash:
+    extends:
+      file: docker-compose-base.yml
+      service: logstash
+    environment:
+      ES_HOST: elasticsearch:9200
+    depends_on:
+      elasticsearch-logs:
+        condition: service_healthy
+    volumes:
+    -   ./elk/logstash.conf:/usr/share/logstash/config/logstash.conf
+    -   ./elk/logstash/pipeline:/usr/share/logstash/pipeline
+
+  kibana:
+    extends:
+      file: docker-compose-base.yml
+      service: kibana
+    environment:
+      ELASTICSEARCH_HOSTS: http://elastic:9200
+    depends_on:
+      elasticsearch-logs:
+        condition: service_healthy
+
+  filebeat:
+    extends:
+      file: docker-compose-base.yml
+      service: filebeat
+    depends_on:
+    -   kibana
+    -   logstash
+    volumes:
+    -   filebeat_data:/var/log/filebeat
+
+  elasticsearch-logs:
+    extends:
+      file: docker-compose-base.yml
+      service: elasticsearch-logs
+    ports:
+      - 9200:9200
+
+volumes:
+  postgres_db:
+  es_logs_data:
+  filebeat_data:

@@ -17,10 +17,10 @@ class ProjectSettings(BaseSettings):
 
     # authjwt_secret_key: str = Field(..., alias="JWT_ACCESS_TOKEN_SECRET_KEY")
 
-    model_config = SettingsConfigDict(env_prefix='project_', env_file='.env')
+    model_config = SettingsConfigDict(env_prefix='project_', env_file='.env', extra='ignore')
 
 class PostgresSettings(BaseSettings):
-    dbname: str = Field('movies_database')
+    stories_db: str = Field('stories')
     user: str = ...
     password: str = ...
     host: str = Field('localhost')
@@ -28,10 +28,10 @@ class PostgresSettings(BaseSettings):
     echo: bool = Field(True)
     dbschema: str = Field('public')
 
-    model_config = SettingsConfigDict(env_prefix='postgres_', env_file='.env')
+    model_config = SettingsConfigDict(env_prefix='postgres_', env_file='.env', extra='ignore')
 
     def get_dsn(self):
-        return f'postgresql+psycopg://{self.user}:{self.password}@{self.host}:{self.port}/{self.dbname}'
+        return f'postgresql+psycopg://{self.user}:{self.password}@{self.host}:{self.port}/{self.stories_db}'
 
     def get_connection_info(self):
         return {
@@ -44,7 +44,7 @@ class GunicornSettings(BaseSettings):
     port: int = Field(8000)
     workers: int = Field(2)
     loglevel: str = Field('debug')
-    model_config = SettingsConfigDict(env_prefix='gunicorn_', env_file='.env')
+    model_config = SettingsConfigDict(env_prefix='gunicorn_', env_file='.env', extra='ignore')
 
 # Корень проекта
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

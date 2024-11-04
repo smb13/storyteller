@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from uuid import uuid4
 
 from sqlalchemy import Column, DateTime
@@ -10,5 +10,5 @@ class IdMixin(object):
 
 
 class TimestampMixin(object):
-    created_at = Column(DateTime, default=datetime.utcnow)
-    modified_at = Column(DateTime, onupdate=datetime.utcnow, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(UTC))
+    modified_at = Column(DateTime, onupdate=datetime.now(UTC), default=datetime.now(UTC))

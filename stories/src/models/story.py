@@ -1,4 +1,4 @@
-from enum import Enum
+import enum
 from sqlalchemy import Column, ForeignKey, String, UniqueConstraint, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -7,7 +7,7 @@ from db.alchemy import Base
 from models.mixin import IdMixin, TimestampMixin
 
 
-class StoryType(Enum):
+class StoryType(enum.Enum):
     STORY = 'Story'
     JOKE = 'Joke'
 

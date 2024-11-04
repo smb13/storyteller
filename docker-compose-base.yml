@@ -1,0 +1,82 @@
+---
+version        : '3.8'
+
+
+x-base-settings: &base-settings
+  env_file: .env
+  restart: on-failure:3
+
+x-elastic-envs : &elastic-envs
+  environment:
+    ES_JAVA_OPTS: -Xms1000m -Xmx1000m
+    discovery.type: single-node
+    xpack.security.enabled: false
+    bootstrap.memory_lock: true
+    cluster.routing.allocation.disk.threshold_enabled: false
+
+
+services:
+  stories:
+    build:
+      context: stories
+      network: host
+    <<: *base-settings
+    environment:
+      PORT: 8000
+      OTEL_SERVICE_NAME: story-getter
+
+  postgres:
+    image: postgres:16-alpine
+    <<: *base-settings
+    volumes:
+    -   ./db_dump:/etc/db_dump/
+    -   postgres_db:/var/lib/postgresql/data
+    healthcheck:
+      test: psql -U $POSTGRES_USER -d postgres -c "SELECT 1;"
+      start_period: 5s
+      interval: 2s
+      timeout: 1s
+      retries: 3
+
+  elasticsearch-logs:
+    image: elasticsearch:8.15.3
+    <<: [*base-settings, *elastic-envs]
+    volumes:
+    -   es_logs_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: curl -f http://localhost:9200/_cluster/health
+      start_period: 10s
+      interval: 5s
+      timeout: 1s
+      retries: 10
+
+  logstash:
+    image: logstash:8.15.3
+    <<: *base-settings
+    environment:
+    -   XPACK_MONITORING_ENABLED=false
+    ports:
+    -   5044:5044/udp
+    volumes:
+    -   ./elk/logstash.conf:/usr/share/logstash/config/logstash.conf
+    -   ./elk/logstash/pipeline:/usr/share/logstash/pipeline
+    command: logstash -f /usr/share/logstash/config/logstash.conf
+
+  kibana:
+    image: kibana:8.15.3
+    <<: *base-settings
+    ports:
+    -   5601:5601
+
+  filebeat:
+    build:
+      context: ./elk/filebeat
+      network: host
+    volumes:
+    -   filebeat_data:/var/log/filebeat
+
+
+volumes        :
+  postgres_db:
+  es_logs_data:
+  filebeat_data:

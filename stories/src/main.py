@@ -20,13 +20,13 @@ async def lifespan(_: FastAPI) -> AsyncGenerator:
         password=postgres_settings.password,
         host=postgres_settings.host,
         port=postgres_settings.port,
-        db_name=postgres_settings.dbname,
+        db_name=postgres_settings.stories_db,
     )
     alchemy.engine = create_async_engine(dsn, echo=True, future=True)
     alchemy.AsyncSessionLocal = sessionmaker(alchemy.engine, class_=AsyncSession, expire_on_commit=False)
 
     # Импорт моделей необходим для их автоматического создания
-    from models import User  # noqa
+    from models.story import Story  # noqa
 
     if project_settings.debug:
         await create_database()
